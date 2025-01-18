@@ -1,7 +1,7 @@
 {
-  "name": "vite-elm-template",
-  "author": "Lindsay Wardell",
-  "description": "A default template for building Elm applications using Vite.",
+  "name": "kanapuro-elm",
+  "author": "Aaron Johnson",
+  "description": "Japanese kana learning software",
   "version": "2.1.1",
   "license": "MIT",
   "type": "module",
