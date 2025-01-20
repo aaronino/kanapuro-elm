@@ -1,4 +1,4 @@
-module PlayerStatistics exposing (..)
+module PlayerStatistics exposing (placeHolder)
 
 import Html exposing (..)
 import Romaji

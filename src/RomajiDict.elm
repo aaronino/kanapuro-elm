@@ -1,4 +1,4 @@
-module RomajiDict exposing (..)
+module RomajiDict exposing (RomajiDict(..), map, toList, update, values)
 
 import Dict exposing (Dict)
 import Romaji

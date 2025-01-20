@@ -1,4 +1,4 @@
-module Romaji exposing (..)
+module Romaji exposing (Romaji(..), englishToList, getRandomRomaji, getRandomRomajiList, romajiAsList, romajiToEnglish, romajiToHiragana, romajiToOrder, stringToRomaji)
 
 import Random
 

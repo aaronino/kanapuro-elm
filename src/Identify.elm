@@ -1,4 +1,4 @@
-module Identify exposing (..)
+module Identify exposing (Model, Msg, init, update, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (class, href, style)
@@ -41,20 +41,13 @@ type alias Item =
     }
 
 
-init : Scoring.RomajiScoringDictionary -> ( Model, Cmd Msg )
-init scoreInfo =
+init : Scoring.RomajiScoringDictionary -> Random.Seed -> Model
+init scoreInfo seed =
     let
-        seed =
-            Random.initialSeed 312
-
         ( nextItem, nextSeed ) =
             getNextItem seed scoreInfo
-
-        -- todo get a random starting seed
     in
-    ( Model (DisplayingItem nextItem) nextSeed nextItem.target scoreInfo
-    , Cmd.none
-    )
+    Model (DisplayingItem nextItem) nextSeed nextItem.target scoreInfo
 
 
 getNextItem : Random.Seed -> Scoring.RomajiScoringDictionary -> ( Item, Random.Seed )

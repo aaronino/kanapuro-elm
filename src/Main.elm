@@ -7,6 +7,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Identify
 import Memory
+import Random
 import Scoring
 import Svg
 import Svg.Attributes
@@ -43,8 +44,8 @@ init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ _ key =
     let
         -- Initialize Identify model and its commands
-        ( identifyInitialModel, identifyInitialCmd ) =
-            Identify.init Scoring.romajiScoringDict
+        identifyInitialModel =
+            Identify.init Scoring.romajiScoringDict (Random.initialSeed 3121)
 
         ( memoryInitialModel, memoryInitialCmd ) =
             Memory.init
@@ -55,10 +56,7 @@ init _ _ key =
       , memoryModel = memoryInitialModel
       , romajiScoreInfo = Scoring.romajiScoringDict
       }
-    , Cmd.batch
-        [ Cmd.map IdentifyMsg identifyInitialCmd
-        , Cmd.map MemoryMsg memoryInitialCmd
-        ]
+    , Cmd.map MemoryMsg memoryInitialCmd
     )
 
 
@@ -211,7 +209,7 @@ frontPageDisplay =
             )
         ]
     , div [ class "flex flex-row flex-wrap justify-center mt-12" ]
-        [ div [ class "flex flex-row justify-center content-center h-48 w-2/3 text-2xl" ]
+        [ div [ class "flex flex-row justify-center content-center h-48 w-2/3" ]
             [ a
                 [ href "/identify"
                 , class
@@ -219,9 +217,12 @@ frontPageDisplay =
                         ++ "transition-all duration-300 hover:text-sky-600 hover:ring-sky-600"
                     )
                 ]
-                [ div [ class "flex flex-row justify-center" ]
-                    [ Heroicons.Outline.academicCap [ Svg.Attributes.width "1.5rem", Svg.Attributes.height "2rem" ]
-                    , p [ class "ml-2" ] [ text "Quick start" ]
+                [ div [ class "flex flex-col justify-center text-5xl" ]
+                    [ div
+                        [ class "m-auto" ]
+                        [ Heroicons.Outline.academicCap [ Svg.Attributes.width "3rem", Svg.Attributes.height "3rem" ]
+                        ]
+                    , p [ class "text-lg" ] [ text "Quick start" ]
                     ]
                 ]
             ]
@@ -247,7 +248,7 @@ createGameButton route =
         icon =
             getRouteIcon route
     in
-    div [ class "flex flex-row justify-center content-center h-48 w-1/3 text-2xl" ]
+    div [ class "flex flex-row justify-center content-center h-48 w-1/3 text-5xl" ]
         [ a
             [ href routeData.href
             , class
@@ -255,9 +256,11 @@ createGameButton route =
                     ++ "transition-all duration-300 hover:text-sky-600 hover:ring-sky-600"
                 )
             ]
-            [ div [ class "flex flex-row justify-center" ]
-                [ icon [ Svg.Attributes.width "1.5rem", Svg.Attributes.height "2rem" ]
-                , p [ class "ml-2" ] [ text routeData.text ]
+            [ div [ class "flex flex-col justify-center" ]
+                [ div
+                    [ class "m-auto" ]
+                    [ icon [ Svg.Attributes.width "3rem", Svg.Attributes.height "3rem" ] ]
+                , p [ class "text-lg" ] [ text routeData.text ]
                 ]
             ]
         ]
