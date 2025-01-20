@@ -2,11 +2,14 @@ module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
 
 import Browser
 import Browser.Navigation as Nav
+import Heroicons.Outline
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Identify
 import Memory
 import Scoring
+import Svg
+import Svg.Attributes
 import Url
 import Url.Parser as Parser
 
@@ -20,6 +23,7 @@ type Route
     | Account
     | About
     | ScoreData
+    | Speed
 
 
 
@@ -110,6 +114,11 @@ routeParser =
         [ Parser.map Home (Parser.s "home")
         , Parser.map Identify (Parser.s "identify")
         , Parser.map Memory (Parser.s "memory")
+        , Parser.map Settings (Parser.s "settings")
+        , Parser.map Account (Parser.s "account")
+        , Parser.map About (Parser.s "about")
+        , Parser.map ScoreData (Parser.s "score_data")
+        , Parser.map Speed (Parser.s "speed")
         ]
 
 
@@ -145,9 +154,7 @@ view model =
                     staticPageLayout identifyView
 
                 Memory ->
-                    miniNavigationDisplay [ Home, Identify ]
-                        ++ header
-                        ++ Memory.view MemoryMsg model.memoryModel
+                    staticPageLayout (Memory.view MemoryMsg model.memoryModel)
 
                 _ ->
                     staticPageLayout frontPageDisplay
@@ -160,13 +167,13 @@ view model =
 
 staticPageLayout : List (Html Msg) -> List (Html Msg)
 staticPageLayout innerContent =
-    [ div [ class "flex justify-center w-full h-full min-h-full bg-zinc-950 text-sky-50" ]
+    [ div [ class "flex justify-center w-full h-full text-sky-50 bg-zinc-950 " ]
         [ div [] []
         , div [ class "w-10/12 max-w-4xl" ]
             -- top bar
-            [ div [ class "flex justify-between h-20 p-5 mt-2 items-end" ]
-                [ div [ class "text-4xl text-sky-600 transition-all ease-in-out tracking-tighter hover:tracking-wide hover:text-sky-300 duration-300" ]
-                    [ a [ href (routeToLinkUrlAndDisplay Home).href ] [ text "kanapuro" ]
+            [ div [ class "flex justify-between items-end h-20 p-5 mt-2 " ]
+                [ div [ class "text-4xl text-sky-600 tracking-tighter transition-all duration-300 hover:tracking-wide hover:text-sky-300 " ]
+                    [ a [ href (routeToFullRouteData Home).href ] [ text "kanapuro" ]
                     ]
                 , div []
                     [ ul [ class "inline-flex space-x-8 text-sm" ]
@@ -178,7 +185,7 @@ staticPageLayout innerContent =
                 ]
 
             -- primary content
-            , div [ class "rounded-lg p-3 bg-zinc-900 mx-2 my-3 justify-center text-center ring-2 ring-zinc-800" ]
+            , div [ class "justify-center text-center p-3 mx-2 my-3 bg-zinc-900 ring-2 ring-zinc-800 rounded-lg" ]
                 innerContent
             ]
         , div [] []
@@ -191,94 +198,116 @@ frontPageDisplay =
     let
         buttons =
             List.map createGameButton
-                [ routeToLinkUrlAndDisplay Identify
-                , routeToLinkUrlAndDisplay Memory
-                , routeToLinkUrlAndDisplay Typing
-                , routeToLinkUrlAndDisplay Identify
-                , routeToLinkUrlAndDisplay Identify
+                [ Identify
+                , Memory
+                , Typing
+                , Speed
                 ]
     in
-    [ div [ class "text-2xl my-10 mx-10 leading-loose p-3 ring-1 ring-zinc-800 bg-slate-600 shadow-lg shadow-black" ]
+    [ div [ class "my-10 mx-10 p-3 text-2xl leading-loose bg-slate-600 ring-1 ring-zinc-800 shadow-lg shadow-black" ]
         [ text
             ("Kanapuro is a game for learning Hiragana quickly and efficiently.\nChoose\n from a variety of exercises "
                 ++ "to practice, or let Kanapuro lead you through exercises to master Hiragana."
             )
         ]
-    , p [ class "mt-12 text-3xl" ] [ text "Choose your game..." ]
-    , div [ class "mt-6 flex flex-row flex-wrap justify-start" ] buttons
-    ]
-
-
-createGameButton : LinkUrlAndDisplay -> Html Msg
-createGameButton game =
-    div [ class "text-2xl h-48 justify-center content-center w-1/3 flex flex-row" ]
-        [ a [ href game.href, class "w-48 h-auto m-6 text-slate-50 from-sky-600 to-sky-800 shadow-lg shadow-blue content-center ring-1 ring-slate-600 rounded-md bg-gradient-to-tr" ]
-            [ text game.text ]
-        ]
-
-
-header : List (Html Msg)
-header =
-    [ h1 [ class "text-3xl p-20" ] [ text "Kanapuro" ] ]
-
-
-miniNavigationDisplay : List Route -> List (Html Msg)
-miniNavigationDisplay games =
-    [ miniNavigationGameGrid games
-    ]
-
-
-miniNavigationGameGrid : List Route -> Html Msg
-miniNavigationGameGrid games =
-    div
-        [ style "display" "flex"
-        , style "gap" "1px"
-        , style "justify-content" "flex-start"
-        ]
-        (List.map miniNavigationGameCell games)
-
-
-miniNavigationGameCell : Route -> Html Msg
-miniNavigationGameCell game =
-    let
-        link =
-            routeToLinkUrlAndDisplay game
-    in
-    div []
-        [ a
-            [ href link.href
-            ]
-            [ button
-                [ style "padding" "10px"
-                , style "margin" "5px"
-                , style "font-size" "15px"
+    , div [ class "flex flex-row flex-wrap justify-center mt-12" ]
+        [ div [ class "flex flex-row justify-center content-center h-48 w-2/3 text-2xl" ]
+            [ a
+                [ href "/identify"
+                , class
+                    ("content-center text-center w-full h-auto m-6 text-slate-50 from-zinc-950 to-zinc-900 bg-gradient-to-tr shadow-lg shadow-blue ring ring-amber-600 rounded-md"
+                        ++ "transition-all duration-300 hover:text-sky-600 hover:ring-sky-600"
+                    )
                 ]
-                [ text link.text ]
+                [ div [ class "flex flex-row justify-center" ]
+                    [ Heroicons.Outline.academicCap [ Svg.Attributes.width "1.5rem", Svg.Attributes.height "2rem" ]
+                    , p [ class "ml-2" ] [ text "Quick start" ]
+                    ]
+                ]
+            ]
+        ]
+    , p [ class "text-3xl" ] [ text "or choose your game..." ]
+    , div [ class "flex flex-row flex-wrap justify-start mt-6" ] buttons
+    , div [ class "m-4" ]
+        [ a
+            [ href (routeToFullRouteData ScoreData).href
+            , class "p-4 text-white text-lg bg-slate-600 transition-all hover:tracking-wide duration-300 rounded-md"
+            ]
+            [ text "See my stats" ]
+        ]
+    ]
+
+
+createGameButton : Route -> Html Msg
+createGameButton route =
+    let
+        routeData =
+            routeToFullRouteData route
+
+        icon =
+            getRouteIcon route
+    in
+    div [ class "flex flex-row justify-center content-center h-48 w-1/3 text-2xl" ]
+        [ a
+            [ href routeData.href
+            , class
+                ("content-center text-center w-48 h-auto m-6 text-slate-50 from-zinc-950 to-zinc-900 bg-gradient-to-tr shadow-lg shadow-blue ring ring-amber-600 rounded-md"
+                    ++ "transition-all duration-300 hover:text-sky-600 hover:ring-sky-600"
+                )
+            ]
+            [ div [ class "flex flex-row justify-center" ]
+                [ icon [ Svg.Attributes.width "1.5rem", Svg.Attributes.height "2rem" ]
+                , p [ class "ml-2" ] [ text routeData.text ]
+                ]
             ]
         ]
 
 
-type alias LinkUrlAndDisplay =
-    { href : String, text : String }
+type alias FullRouteData =
+    { href : String
+    , text : String
+    }
 
 
-routeToLinkUrlAndDisplay : Route -> LinkUrlAndDisplay
-routeToLinkUrlAndDisplay route =
+routeToFullRouteData : Route -> FullRouteData
+routeToFullRouteData route =
     case route of
         Home ->
-            LinkUrlAndDisplay "/home" "Home"
+            FullRouteData "/home" "Home"
 
         Identify ->
-            LinkUrlAndDisplay "/identify" "Identify"
+            FullRouteData "/identify" "Identify"
 
         Memory ->
-            LinkUrlAndDisplay "/memory" "Memory"
+            FullRouteData "/memory" "Memory"
 
         Typing ->
-            LinkUrlAndDisplay "/typing" "Typing"
+            FullRouteData "/typing" "Typing"
+
+        Speed ->
+            FullRouteData "/speed" "Speed"
 
         _ ->
-            LinkUrlAndDisplay "/construction" "construction"
+            FullRouteData "/construction" "construction"
+
+
+getRouteIcon : Route -> (List (Attribute Msg) -> Html Msg)
+getRouteIcon route =
+    case route of
+        Identify ->
+            Heroicons.Outline.tableCells
+
+        Memory ->
+            Heroicons.Outline.adjustmentsHorizontal
+
+        Typing ->
+            Heroicons.Outline.chatBubbleLeftEllipsis
+
+        Speed ->
+            Heroicons.Outline.wifi
+
+        _ ->
+            Heroicons.Outline.playCircle
 
 
 

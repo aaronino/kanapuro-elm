@@ -1,11 +1,5 @@
 module TestSpec exposing (noOp)
 
-import Main
-import Test exposing (Test)
-import Test.Html.Event as Event
-import Test.Html.Query as Query
-import Test.Html.Selector as Html
-
 
 noOp : String
 noOp =

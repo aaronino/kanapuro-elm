@@ -6,9 +6,7 @@ import Html.Events exposing (onClick)
 import ListShuffle
 import Random
 import Romaji
-import RomajiDict
 import Scoring
-import String
 import Task
 import Time
 
@@ -26,7 +24,7 @@ type Msg
 
 type State
     = DisplayingItem Item
-    | DisplayingAnswerResult Romaji.Romaji
+    | DisplayingAnswerResult Item Romaji.Romaji
 
 
 type alias Model =
@@ -85,10 +83,19 @@ update msg model =
                     else
                         -1
 
+                currentItem =
+                    case model.state of
+                        DisplayingItem item ->
+                            item
+
+                        _ ->
+                            -- impossible state, log error
+                            Item Romaji.A []
+
                 updatedScore =
                     Scoring.updateScoreInfo model.scoreInfo pointChange model.currentTarget answerTime
             in
-            ( { model | state = DisplayingAnswerResult answer, scoreInfo = updatedScore }
+            ( { model | state = DisplayingAnswerResult currentItem answer, scoreInfo = updatedScore }
             , Cmd.none
             )
 
@@ -108,13 +115,23 @@ view model =
         [ p [ class "text-center text-3xl " ] [ text "Identify" ]
         , div [] [ text "Find the matching character" ]
         ]
-    , div [ class "mb-10 text-left mx-10" ]
-        [ a [ href "home", class "text-red-600 text-lg transition-all ease-in-out hover:tracking-wide hover:text-red-600 duration-300 hover:text-xl" ] [ text "🠈 Back to games" ]
+    , div [ class "grid grid-cols-5 mb-10 mx-10" ]
+        [ div [ class "col-span-4 text-left pr-4" ]
+            [ div [ class "flex justify-between mb-1 flex-inline h-full items-center" ]
+                [ div [ class "w-full bg-gray-200 rounded-full h-6 dark:bg-gray-700" ]
+                    [ div [ class "bg-amber-600 h-6 rounded-full", style "width" "50%" ] [] ]
+                ]
+            ]
+        , a
+            [ href "home"
+            , class "text-white bg-slate-600 text-lg p-1 rounded-md transition-all ease-in-out hover:tracking-wide duration-300"
+            ]
+            [ text "🠈 Back to games" ]
         ]
     , div [ class "text-center" ]
         [ case model.state of
-            DisplayingAnswerResult answer ->
-                answerDisplay model.currentTarget answer model.scoreInfo
+            DisplayingAnswerResult currentItem answer ->
+                answerDisplay currentItem answer
 
             DisplayingItem currentItem ->
                 itemDisplay currentItem
@@ -153,7 +170,7 @@ itemDisplay item =
     in
     div []
         [ div [ class "flex justify-center content-center" ]
-            [ p [ class "text-5xl text-white bg-zinc-950 rounded-lg h-36 w-36 content-center ring ring-slate-600" ]
+            [ p [ class "text-5xl text-white bg-zinc-950 rounded-lg h-36 w-36 content-center ring ring-white" ]
                 [ text target ]
             ]
         , choiceGrid item.choices
@@ -176,49 +193,114 @@ choiceBox choice =
     div []
         [ button
             [ onClick (ItemAnswered choice)
-            , class "text-5xl text-white bg-zinc-950 rounded-lg h-36 w-36 content-center ring ring-yellow-600 hover:ring-sky-600 hover:from-sky-600 hover:to-zinc-950 bg-gradient-to-bl"
+            , class
+                ("content-center text-5xl h-36 w-36 text-white from-zinc-950 to-zinc-900 bg-gradient-to-tr ring ring-yellow-600 "
+                    ++ "transition-all hover:ring-sky-600 hover:text-sky-300 hover:to-zinc-950 duration-300"
+                )
             ]
             [ text choiceText ]
         ]
 
 
-answerDisplay : Romaji.Romaji -> Romaji.Romaji -> Scoring.RomajiScoringDictionary -> Html Msg
-answerDisplay target answer scores =
+answerDisplay : Item -> Romaji.Romaji -> Html Msg
+answerDisplay item answer =
     let
         isCorrect =
-            target == answer
+            item.target == answer
 
-        correctAnswerDisplay =
-            h2 [ style "color" "green" ] [ text "Correct!" ]
+        answerClasses =
+            if isCorrect then
+                "text-5xl text-green-600 bg-zinc-950 rounded-lg h-36 w-36 content-center ring ring-green-600"
 
-        wrongAnswerDisplay =
-            h2 [ style "color" "orange" ] [ text "Incorrect" ]
+            else
+                "text-5xl text-white bg-zinc-950 rounded-lg h-36 w-36 content-center ring ring-white"
+    in
+    div [ onClick NextItem, class "cursor-pointer" ]
+        [ div [ class "grid gap-10 grid-cols-3" ]
+            [ div [] []
+            , div [ class "flex justify-center" ]
+                [ p [ class answerClasses ]
+                    [ text (Romaji.romajiToHiragana item.target)
+                    , br [] []
+                    , text (Romaji.romajiToEnglish item.target)
+                    ]
+                ]
+            , div [ class "flex justify-center" ] []
+            ]
+        , answerGrid item.choices item.target answer
+        , div [ class "flex flex-row justify-center content-center w-full" ] []
+        , div []
+            [ button
+                [ onClick NextItem
+                , class "content-center h-12 w-36 text-xl text-slate-50 bg-gradient-to-tr from-green-600 to-green-800 shadow-lg shadow-blue ring-1 ring-slate-600 rounded-md"
+                ]
+                [ text "Next ➔" ]
+            ]
+        ]
 
-        scoresAsList =
-            RomajiDict.map
-                (\romaji scoreInfo -> { romaji = Maybe.withDefault Romaji.A (Romaji.stringToRomaji romaji), score = scoreInfo.score })
-                scores
-                |> RomajiDict.values
 
-        allScores =
-            scoresAsList
-                |> List.sortBy (\r -> Romaji.romajiToOrder r.romaji)
-                |> List.map (\scoreInfo -> li [] [ text (Romaji.romajiToEnglish scoreInfo.romaji ++ " " ++ String.fromInt scoreInfo.score ++ ", ") ])
+getAnswerState : Romaji.Romaji -> Romaji.Romaji -> Romaji.Romaji -> AnswerState
+getAnswerState romajiToDisplay targetRomaji answeredRomaji =
+    if romajiToDisplay == targetRomaji then
+        Correct
+
+    else if romajiToDisplay == answeredRomaji then
+        Incorrect
+
+    else
+        Inert
+
+
+answerGrid : List Romaji.Romaji -> Romaji.Romaji -> Romaji.Romaji -> Html Msg
+answerGrid choices target answer =
+    let
+        answerBoxes =
+            List.map
+                (\choice ->
+                    let
+                        answerState =
+                            getAnswerState choice target answer
+                    in
+                    answerBox choice answerState
+                )
+                choices
+    in
+    div
+        [ class "grid gap-10 grid-cols-3 mt-10 mb-10" ]
+        answerBoxes
+
+
+type AnswerState
+    = Inert
+    | Correct
+    | Incorrect
+
+
+answerBox : Romaji.Romaji -> AnswerState -> Html Msg
+answerBox choice answerState =
+    let
+        choiceTextEnglish =
+            Romaji.romajiToEnglish choice
+
+        choiceTextHiragana =
+            Romaji.romajiToHiragana choice
+
+        classes =
+            case answerState of
+                Inert ->
+                    "content-center text-5xl h-36 w-36 text-white from-zinc-950 to-zinc-900 bg-gradient-to-tr ring ring-yellow-600 "
+
+                Correct ->
+                    "content-center text-5xl h-36 w-36 text-green-600 from-zinc-950 to-zinc-900 bg-gradient-to-tr ring ring-green-600 "
+
+                Incorrect ->
+                    "content-center text-5xl h-36 w-36 text-red-600 from-zinc-950 to-zinc-900 bg-gradient-to-tr ring ring-red-600 "
     in
     div []
-        [ h1 [] [ text ("Question: " ++ Romaji.romajiToHiragana target) ]
-        , h1 [] [ text ("Correct Answer: " ++ Romaji.romajiToEnglish target) ]
-        , h1 [] [ text ("Your Answer: " ++ Romaji.romajiToEnglish answer) ]
-        , if isCorrect then
-            correctAnswerDisplay
-
-          else
-            wrongAnswerDisplay
-        , button
-            [ onClick NextItem
-            , style "padding" "100px"
-            , style "margin" "20px"
-            , style "font-size" "40px"
+        [ button
+            [ onClick NextItem, class classes ]
+            [ text choiceTextHiragana
+            , br [] []
+            , text choiceTextEnglish
             ]
-            [ text "Next Question" ]
         ]

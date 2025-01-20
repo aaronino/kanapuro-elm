@@ -3,7 +3,6 @@ module Memory exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
-import Identify exposing (State(..))
 import List
 import MemoryQuiz
 import Random
