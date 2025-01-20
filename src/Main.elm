@@ -7,9 +7,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Identify
 import Memory
-import Random
 import Scoring
-import Svg
 import Svg.Attributes
 import Url
 import Url.Parser as Parser
@@ -27,6 +25,13 @@ type Route
     | Speed
 
 
+type Msg
+    = LinkClicked Browser.UrlRequest
+    | UrlChanged Url.Url
+    | IdentifyMsg Identify.Msg
+    | MemoryMsg Memory.Msg
+
+
 
 -- MODEL
 
@@ -40,12 +45,18 @@ type alias Model =
     }
 
 
+type alias FullRouteData =
+    { href : String
+    , text : String
+    }
+
+
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ _ key =
     let
         -- Initialize Identify model and its commands
-        identifyInitialModel =
-            Identify.init Scoring.romajiScoringDict (Random.initialSeed 3121)
+        ( identifyInitialModel, identifyInitialCmd ) =
+            Identify.init Scoring.romajiScoringDict
 
         ( memoryInitialModel, memoryInitialCmd ) =
             Memory.init
@@ -56,19 +67,15 @@ init _ _ key =
       , memoryModel = memoryInitialModel
       , romajiScoreInfo = Scoring.romajiScoringDict
       }
-    , Cmd.map MemoryMsg memoryInitialCmd
+    , Cmd.batch
+        [ Cmd.map IdentifyMsg identifyInitialCmd
+        , Cmd.map MemoryMsg memoryInitialCmd
+        ]
     )
 
 
 
 -- UPDATE
-
-
-type Msg
-    = LinkClicked Browser.UrlRequest
-    | UrlChanged Url.Url
-    | IdentifyMsg Identify.Msg
-    | MemoryMsg Memory.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -266,32 +273,26 @@ createGameButton route =
         ]
 
 
-type alias FullRouteData =
-    { href : String
-    , text : String
-    }
-
-
 routeToFullRouteData : Route -> FullRouteData
 routeToFullRouteData route =
     case route of
         Home ->
-            FullRouteData "/home" "Home"
+            { href = "/home", text = "Home" }
 
         Identify ->
-            FullRouteData "/identify" "Identify"
+            { href = "/identify", text = "Identify" }
 
         Memory ->
-            FullRouteData "/memory" "Memory"
+            { href = "/memory", text = "Memory" }
 
         Typing ->
-            FullRouteData "/typing" "Typing"
+            { href = "/typing", text = "Typing" }
 
         Speed ->
-            FullRouteData "/speed" "Speed"
+            { href = "/speed", text = "Speed" }
 
         _ ->
-            FullRouteData "/construction" "construction"
+            { href = "/construction", text = "construction" }
 
 
 getRouteIcon : Route -> (List (Attribute Msg) -> Html Msg)

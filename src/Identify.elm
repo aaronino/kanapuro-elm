@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (class, href, style)
 import Html.Events exposing (onClick)
 import ListShuffle
+import Platform.Cmd as Cmd
 import Random
 import Romaji
 import Scoring
@@ -20,17 +21,18 @@ type Msg
     = NextItem
     | ItemAnswered Romaji.Romaji
     | UpdatingScore Romaji.Romaji Time.Posix
+    | RandomSeedReceived Int
 
 
 type State
-    = DisplayingItem Item
+    = GettingRandomItem
+    | DisplayingItem Item
     | DisplayingAnswerResult Item Romaji.Romaji
 
 
 type alias Model =
     { state : State
     , seed : Random.Seed
-    , currentTarget : Romaji.Romaji
     , scoreInfo : Scoring.RomajiScoringDictionary
     }
 
@@ -41,13 +43,20 @@ type alias Item =
     }
 
 
-init : Scoring.RomajiScoringDictionary -> Random.Seed -> Model
-init scoreInfo seed =
+init : Scoring.RomajiScoringDictionary -> ( Model, Cmd Msg )
+init scoreInfo =
     let
-        ( nextItem, nextSeed ) =
-            getNextItem seed scoreInfo
+        seed =
+            Random.initialSeed 1
     in
-    Model (DisplayingItem nextItem) nextSeed nextItem.target scoreInfo
+    ( Model GettingRandomItem seed scoreInfo
+    , Random.generate RandomSeedReceived getRandomSeed
+    )
+
+
+getRandomSeed : Random.Generator Int
+getRandomSeed =
+    Random.int 0 1000000
 
 
 getNextItem : Random.Seed -> Scoring.RomajiScoringDictionary -> ( Item, Random.Seed )
@@ -58,6 +67,13 @@ getNextItem seed scoreInfo =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        RandomSeedReceived seed ->
+            let
+                ( nextItem, nextSeed ) =
+                    getNextItem (Random.initialSeed seed) model.scoreInfo
+            in
+            ( { model | seed = nextSeed, state = DisplayingItem nextItem }, Cmd.none )
+
         ItemAnswered answer ->
             let
                 updateScoreForAnswer =
@@ -69,13 +85,6 @@ update msg model =
 
         UpdatingScore answer answerTime ->
             let
-                pointChange =
-                    if answer == model.currentTarget then
-                        2
-
-                    else
-                        -1
-
                 currentItem =
                     case model.state of
                         DisplayingItem item ->
@@ -85,8 +94,15 @@ update msg model =
                             -- impossible state, log error
                             Item Romaji.A []
 
+                pointChange =
+                    if answer == currentItem.target then
+                        2
+
+                    else
+                        -1
+
                 updatedScore =
-                    Scoring.updateScoreInfo model.scoreInfo pointChange model.currentTarget answerTime
+                    Scoring.updateScoreInfo model.scoreInfo pointChange currentItem.target answerTime
             in
             ( { model | state = DisplayingAnswerResult currentItem answer, scoreInfo = updatedScore }
             , Cmd.none
@@ -97,7 +113,7 @@ update msg model =
                 ( nextItem, nextSeed ) =
                     getNextItem model.seed model.scoreInfo
             in
-            ( { model | state = DisplayingItem nextItem, currentTarget = nextItem.target, seed = nextSeed }
+            ( { model | state = DisplayingItem nextItem, seed = nextSeed }
             , Cmd.none
             )
 
@@ -128,6 +144,9 @@ view model =
 
             DisplayingItem currentItem ->
                 itemDisplay currentItem
+
+            GettingRandomItem ->
+                div [] []
         ]
     ]
 
