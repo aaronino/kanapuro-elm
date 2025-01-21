@@ -156,17 +156,17 @@ view model =
                         identifyView =
                             List.map convertIdentifyMsgToHomeMsg identifyViewBase
                     in
-                    staticPageLayout identifyView
+                    identifyView
 
                 Memory ->
-                    staticPageLayout (Memory.view MemoryMsg model.memoryModel)
+                    Memory.view MemoryMsg model.memoryModel
 
                 _ ->
-                    staticPageLayout frontPageDisplay
+                    frontPageDisplay
     in
     { title = "Kanapuro"
     , body =
-        currentDisplay
+        staticPageLayout currentDisplay
     }
 
 
@@ -193,7 +193,6 @@ staticPageLayout innerContent =
             , div [ class "justify-center text-center p-3 mx-2 my-3 bg-zinc-900 ring-2 ring-zinc-800 rounded-lg" ]
                 innerContent
             ]
-        , div [] []
         ]
     ]
 

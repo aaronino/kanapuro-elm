@@ -64,58 +64,68 @@ getNextItem seed scoreInfo =
     getRandomItem seed scoreInfo (numberOfTiles - 1)
 
 
+logInvalidMessage : Msg -> Model -> ( Model, Cmd Msg )
+logInvalidMessage msg model =
+    Debug.log ("Received an invalid message of type " ++ Debug.toString msg ++ " during state " ++ Debug.toString model.state) ( model, Cmd.none )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        RandomSeedReceived seed ->
-            let
-                ( nextItem, nextSeed ) =
-                    getNextItem (Random.initialSeed seed) model.scoreInfo
-            in
-            ( { model | seed = nextSeed, state = DisplayingItem nextItem }, Cmd.none )
+    case model.state of
+        GettingRandomItem ->
+            case msg of
+                RandomSeedReceived seed ->
+                    ( updateModelForNextItem model (Random.initialSeed seed)
+                    , Cmd.none
+                    )
 
-        ItemAnswered answer ->
-            let
-                updateScoreForAnswer =
-                    UpdatingScore answer
-            in
-            ( model
-            , Task.perform updateScoreForAnswer Time.now
-            )
+                _ ->
+                    logInvalidMessage msg model
 
-        UpdatingScore answer answerTime ->
-            let
-                currentItem =
-                    case model.state of
-                        DisplayingItem item ->
-                            item
+        DisplayingItem item ->
+            case msg of
+                ItemAnswered answer ->
+                    ( model
+                    , Task.perform (UpdatingScore answer) Time.now
+                    )
 
-                        _ ->
-                            -- impossible state, log error
-                            Item Romaji.A []
+                UpdatingScore answer answerTime ->
+                    let
+                        pointChange =
+                            if answer == item.target then
+                                2
 
-                pointChange =
-                    if answer == currentItem.target then
-                        2
+                            else
+                                -1
 
-                    else
-                        -1
+                        updatedScore =
+                            Scoring.updateScoreInfo model.scoreInfo pointChange item.target answerTime
+                    in
+                    ( { model | state = DisplayingAnswerResult item answer, scoreInfo = updatedScore }
+                    , Cmd.none
+                    )
 
-                updatedScore =
-                    Scoring.updateScoreInfo model.scoreInfo pointChange currentItem.target answerTime
-            in
-            ( { model | state = DisplayingAnswerResult currentItem answer, scoreInfo = updatedScore }
-            , Cmd.none
-            )
+                _ ->
+                    logInvalidMessage msg model
 
-        NextItem ->
-            let
-                ( nextItem, nextSeed ) =
-                    getNextItem model.seed model.scoreInfo
-            in
-            ( { model | state = DisplayingItem nextItem, seed = nextSeed }
-            , Cmd.none
-            )
+        DisplayingAnswerResult _ _ ->
+            case msg of
+                NextItem ->
+                    ( updateModelForNextItem model model.seed
+                    , Cmd.none
+                    )
+
+                _ ->
+                    logInvalidMessage msg model
+
+
+updateModelForNextItem : Model -> Random.Seed -> Model
+updateModelForNextItem model seed =
+    let
+        ( nextItem, nextSeed ) =
+            getNextItem seed model.scoreInfo
+    in
+    { model | state = DisplayingItem nextItem, seed = nextSeed }
 
 
 view : Model -> List (Html Msg)
@@ -243,8 +253,7 @@ answerDisplay item answer =
         , div [ class "flex flex-row justify-center content-center w-full" ] []
         , div []
             [ button
-                [ onClick NextItem
-                , class "content-center h-12 w-36 text-xl text-slate-50 bg-gradient-to-tr from-green-600 to-green-800 shadow-lg shadow-blue ring-1 ring-slate-600 rounded-md"
+                [ class "content-center h-12 w-36 text-xl text-slate-50 bg-gradient-to-tr from-green-600 to-green-800 shadow-lg shadow-blue ring-1 ring-slate-600 rounded-md"
                 ]
                 [ text "Next ➔" ]
             ]
