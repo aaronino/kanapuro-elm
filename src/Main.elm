@@ -172,7 +172,7 @@ view model =
 
 staticPageLayout : List (Html Msg) -> List (Html Msg)
 staticPageLayout innerContent =
-    [ div [ class "flex justify-center w-full h-full text-sky-50 bg-zinc-950 " ]
+    [ div [ class "flex justify-center w-full h-full min-h-screen text-sky-50 from-zinc-950 to-zinc-900 bg-gradient-to-tr" ]
         [ div [] []
         , div [ class "w-10/12 max-w-4xl" ]
             -- top bar

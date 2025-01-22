@@ -66,7 +66,8 @@ getNextItem seed scoreInfo =
 
 logInvalidMessage : Msg -> Model -> ( Model, Cmd Msg )
 logInvalidMessage msg model =
-    Debug.log ("Received an invalid message of type " ++ Debug.toString msg ++ " during state " ++ Debug.toString model.state) ( model, Cmd.none )
+    -- Debug.log ("Received an invalid message of type " ++ Debug.toString msg ++ " during state " ++ Debug.toString model.state) ( model, Cmd.none )
+    ( model, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -75,7 +76,7 @@ update msg model =
         GettingRandomItem ->
             case msg of
                 RandomSeedReceived seed ->
-                    ( updateModelForNextItem model (Random.initialSeed seed)
+                    ( updateModelSeedAndNextItem model (Random.initialSeed seed)
                     , Cmd.none
                     )
 
@@ -111,7 +112,7 @@ update msg model =
         DisplayingAnswerResult _ _ ->
             case msg of
                 NextItem ->
-                    ( updateModelForNextItem model model.seed
+                    ( updateModelSeedAndNextItem model model.seed
                     , Cmd.none
                     )
 
@@ -119,8 +120,8 @@ update msg model =
                     logInvalidMessage msg model
 
 
-updateModelForNextItem : Model -> Random.Seed -> Model
-updateModelForNextItem model seed =
+updateModelSeedAndNextItem : Model -> Random.Seed -> Model
+updateModelSeedAndNextItem model seed =
     let
         ( nextItem, nextSeed ) =
             getNextItem seed model.scoreInfo
